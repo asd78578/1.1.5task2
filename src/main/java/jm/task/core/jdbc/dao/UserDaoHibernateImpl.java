@@ -18,6 +18,7 @@ public class UserDaoHibernateImpl implements UserDao {
 
     }
 
+//createUsersTable: неверно подобраны числовые типы данных для age и id, посмотри соответствие для byte и long в языке SQL
 
     @Override
     public void createUsersTable() {
@@ -27,9 +28,9 @@ public class UserDaoHibernateImpl implements UserDao {
         try {
             transaction = session.beginTransaction();
             session.createSQLQuery("CREATE TABLE IF NOT EXISTS mydbtest" +
-                    " (id mediumint not null auto_increment, name VARCHAR(30), " +
+                    " (id tinyint not null auto_increment, name VARCHAR(30), " +
                     "lastname VARCHAR(30), " +
-                    "age INT, " +
+                    "age tinyint, " +
                     "PRIMARY KEY (id))").executeUpdate();
             transaction.commit();
             System.out.println("The table has been created successfully.");
@@ -86,15 +87,30 @@ public class UserDaoHibernateImpl implements UserDao {
         }
     }
 
+//removeUserById: переделай удаление, которое у тебя происходит в 2 запроса (session.delete(session.get(User.class, id)))
+// так, чтобы удалялось в 1 запрос. Нужен HQL запрос
+
     @Override
     public void removeUserById(long id) {
         Session session = sessionFactory.openSession();
         Transaction transaction = null;
         try {
             transaction = session.beginTransaction();
-            session.delete(session.get(User.class, id));
+
+            // Нужен HQL запрос для удаления пользователя по id
+            String hql = "DELETE FROM User u WHERE u.id = :userId";
+            int deletedUser = session.createQuery(hql)
+                    .setParameter("userId", id)
+                    .executeUpdate();
+
             transaction.commit();
-            System.out.println("User deleted");
+            // Проверка
+            if (deletedUser > 0) {
+                System.out.println("User with id " + id + " removed from the database");
+            }else {
+                System.out.println("User with id " + id + " not removed from the database");
+            }
+
         } catch (Exception e) {
             e.printStackTrace();
             if (transaction != null) {
@@ -127,19 +143,18 @@ public class UserDaoHibernateImpl implements UserDao {
         return list;
     }
 
+// cleanUsersTable: есть специальный sql оператор для очистки таблицы, поищи. Итеративно удалять, как у тебя - можно,
+// но не нужно
+
     @Override
     public void cleanUsersTable() {
         Session session = sessionFactory.openSession();
         Transaction transaction = null;
         try {
             transaction = session.beginTransaction();
-            final List<User> instances = session.createCriteria(User.class).list();
+            session.createSQLQuery("TRUNCATE TABLE mydbtest").executeUpdate();
+            transaction.commit();
 
-            for (Object o : instances) {
-                session.delete(o);
-            }
-
-            session.getTransaction().commit();
             System.out.println("The table is cleared");
         } catch (Exception e) {
             e.printStackTrace();
