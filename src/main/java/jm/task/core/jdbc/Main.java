@@ -20,7 +20,7 @@ public class Main {
         List<User> strings = userService.getAllUsers();
         strings.forEach(s -> System.out.println(s.getName()));
 
-        userService.removeUserById(3);
+        userService.removeUserById(1);
 
         userService.cleanUsersTable();
 
